@@ -201,6 +201,86 @@ describe("运营总览数据转换", () => {
     });
   });
 
+  describe("空白字符串", () => {
+    it("空白值（空串/纯空白）回退到本地样例，同项有效文本保留", () => {
+      const result = normalizeOverview({
+        appName: "   ",
+        appCode: "",
+        description: "\n\t ",
+        features: [{ id: 1, title: "", description: "   ", status: "\t", metric: "有效指标" }],
+        kpis: [{ label: "", value: "  ", trend: "\n", tone: " " }],
+        records: [{ key: "", name: "  ", owner: "", status: " ", metric: "", priority: " \n " }],
+      });
+
+      expectOverview(result, {
+        appName: fallbackOverview.appName,
+        appCode: fallbackOverview.appCode,
+        description: fallbackOverview.description,
+        features: [
+          {
+            id: 1,
+            title: fallbackOverview.features[0].title,
+            description: fallbackOverview.features[0].description,
+            status: fallbackOverview.features[0].status,
+            metric: "有效指标",
+          },
+        ],
+        kpis: [
+          {
+            label: fallbackOverview.kpis[0].label,
+            value: fallbackOverview.kpis[0].value,
+            trend: fallbackOverview.kpis[0].trend,
+            tone: fallbackOverview.kpis[0].tone,
+          },
+        ],
+        records: [
+          {
+            key: fallbackOverview.records[0].key,
+            name: fallbackOverview.records[0].name,
+            owner: fallbackOverview.records[0].owner,
+            status: fallbackOverview.records[0].status,
+            metric: fallbackOverview.records[0].metric,
+            priority: fallbackOverview.records[0].priority,
+          },
+        ],
+      });
+    });
+
+    it("含有效文本的字符串原样保留，不做裁剪", () => {
+      const result = normalizeOverview({
+        appName: " 桌游吧社交平台 ",
+        features: [{ id: 7, title: "  狼人杀之夜  ", description: "有效简介", status: "已上线", metric: "88%" }],
+      });
+
+      expectField(result.appName, " 桌游吧社交平台 ", "appName");
+      expectField(result.features[0].title, "  狼人杀之夜  ", "features[0].title");
+      expectField(result.features[0].description, "有效简介", "features[0].description");
+    });
+
+    it("数字和布尔等错误类型仍按现有规则回退", () => {
+      const result = normalizeOverview({
+        features: [{ id: 1, title: 0, description: false, status: "已上线", metric: "88%" }],
+      });
+
+      expectOverview(result, {
+        appName: fallbackOverview.appName,
+        appCode: fallbackOverview.appCode,
+        description: fallbackOverview.description,
+        features: [
+          {
+            id: 1,
+            title: fallbackOverview.features[0].title,
+            description: fallbackOverview.features[0].description,
+            status: "已上线",
+            metric: "88%",
+          },
+        ],
+        kpis: fallbackOverview.kpis,
+        records: fallbackOverview.records,
+      });
+    });
+  });
+
   describe("垃圾列表项", () => {
     it("非对象项整项替换为同位置本地样例，页面展示条目不丢失", () => {
       const validFeature: FeatureItem = {

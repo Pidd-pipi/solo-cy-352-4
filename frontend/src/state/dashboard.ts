@@ -4,8 +4,9 @@ import type { FeatureItem, KpiItem, OperationRecord, OverviewResponse } from "..
 /**
  * 运营总览统一转换入口：接口成功与接口失败（本地降级）的数据都经
  * normalizeOverview 转换为展示模型，字段契约见 types/index.ts。
- * 每个字段独立校验：接口提供的合法值保留，缺失或类型不符的字段
- * 回退到本地样例同位置的字段；接口完全失败时得到完整本地数据。
+ * 每个字段独立校验：接口提供的合法值保留，缺失、类型不符或空白
+ * （空字符串/纯空白）的字段回退到本地样例同位置的字段；
+ * 接口完全失败时得到完整本地数据。
  */
 
 type RawObject = Record<string, unknown>;
@@ -15,7 +16,8 @@ function isObject(value: unknown): value is RawObject {
 }
 
 function asString(value: unknown, fallback: string): string {
-  return typeof value === "string" ? value : fallback;
+  // 空白字符串（空串/纯空白）不是有效展示内容，同样回退；含有效文本的字符串原样保留
+  return typeof value === "string" && value.trim() !== "" ? value : fallback;
 }
 
 function asNumber(value: unknown, fallback: number): number {
